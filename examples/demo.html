@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>brick-mosaic demo</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 2rem auto; max-width: 880px; padding: 0 1rem; }
+  label { margin-right: 1rem; }
+  #out { margin-top: 1.5rem; overflow-x: auto; }
+  table { border-collapse: collapse; margin-top: 1rem; }
+  td, th { border: 1px solid #ccc; padding: 4px 10px; }
+  .sw { display: inline-block; width: 14px; height: 14px; border: 1px solid #999; vertical-align: middle; margin-right: 6px; }
+</style>
+</head>
+<body>
+<h1>brick-mosaic demo</h1>
+<p>Pick an image, get a brick mosaic plan with baseplate splitting and a parts list. Everything runs locally in your browser.</p>
+<p>
+  <input type="file" id="file" accept="image/*">
+  <label>Grid width (studs) <input type="number" id="gw" value="64" min="8" max="192" style="width:5em"></label>
+  <label>Plate size <input type="number" id="ps" value="32" min="8" max="64" style="width:4em"></label>
+  <label>Max colors <input type="number" id="mc" value="16" min="2" max="24" style="width:4em"></label>
+  <button id="go">Generate</button>
+</p>
+<div id="out"></div>
+<script type="module">
+  import { imageDataToMosaic, splitIntoPlates, mosaicToSVG } from '../src/index.js';
+  import { brick24 } from '../palettes/brick-24.js';
+
+  const out = document.getElementById('out');
+  document.getElementById('go').addEventListener('click', () => {
+    const f = document.getElementById('file').files[0];
+    if (!f) { out.textContent = 'Choose an image first.'; return; }
+    const img = new Image();
+    img.onload = () => {
+      const cv = document.createElement('canvas');
+      cv.width = img.naturalWidth;
+      cv.height = img.naturalHeight;
+      const ctx = cv.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      const data = ctx.getImageData(0, 0, cv.width, cv.height);
+      const plateSize = parseInt(document.getElementById('ps').value, 10);
+      const m = imageDataToMosaic(data.data, cv.width, cv.height, {
+        gridWidth: parseInt(document.getElementById('gw').value, 10),
+        maxColors: parseInt(document.getElementById('mc').value, 10),
+        plateSize: plateSize,
+        palette: brick24,
+      });
+      const plates = splitIntoPlates(m);
+      let html = mosaicToSVG(m);
+      html += '<p>' + m.gridWidth + ' x ' + m.gridHeight + ' studs, ' + m.totalStuds + ' total, '
+        + m.stats.length + ' colors, ' + plates.length + ' baseplates at ' + plateSize + 'x' + plateSize + '</p>';
+      html += '<table><tr><th>Code</th><th>Name</th><th>Count</th></tr>';
+      for (const s of m.stats) {
+        html += '<tr><td><span class="sw" style="background:rgb(' + s.rgb.join(',') + ')"></span>' + s.code + '</td><td>' + s.name + '</td><td>' + s.count + '</td></tr>';
+      }
+      html += '</table>';
+      html += '<h3>Per-plate breakdown</h3>';
+      html += '<table><tr><th>Plate</th><th>Size</th><th>Studs</th><th>Colors</th></tr>';
+      for (const p of plates) {
+        html += '<tr><td>' + p.plateX + ', ' + p.plateY + '</td><td>' + p.width + 'x' + p.height + '</td><td>' + p.studs + '</td><td>' + p.stats.length + '</td></tr>';
+      }
+      html += '</table>';
+      out.innerHTML = html;
+      URL.revokeObjectURL(img.src);
+    };
+    img.src = URL.createObjectURL(f);
+  });
+</script>
+</body>
+</html>
