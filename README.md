@@ -1,5 +1,7 @@
 # brick-mosaic
 
+[![npm version](https://img.shields.io/npm/v/brick-mosaic.svg)](https://www.npmjs.com/package/brick-mosaic) [![npm downloads](https://img.shields.io/npm/dm/brick-mosaic.svg)](https://www.npmjs.com/package/brick-mosaic)
+
 Turn any image into a **2D brick mosaic plan**: a palette-mapped stud
 grid, automatic splitting into baseplates, per-plate and total parts
 lists, and CSV export. Zero dependencies, runs in Node and in the
